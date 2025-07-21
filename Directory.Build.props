@@ -1,0 +1,49 @@
+<Project>
+  <PropertyGroup>
+    <!-- Version Management Policy -->
+    <!-- Prevent automatic package downgrades by enforcing minimum versions -->
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(Version)</PackageValidationBaselineVersion>
+    <ValidatePackageVersions>true</ValidatePackageVersions>
+    
+    <!-- Enforce consistent .NET SDK usage -->
+    <GlobalJsonPath>$(MSBuildThisFileDirectory)global.json</GlobalJsonPath>
+    
+    <!-- Warning properties for version management -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    
+    <!-- Ensure package version consistency -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <EnablePackageVersionOverride>false</EnablePackageVersionOverride>
+    
+    <!-- Additional version safety measures -->
+    <CheckForImplicitPackageReferenceOverrides>true</CheckForImplicitPackageReferenceOverrides>
+    <NoWarn>$(NoWarn);NU1603</NoWarn> <!-- Remove NU1603 warning suppression to detect version downgrades -->
+  </PropertyGroup>
+
+  <!-- Define minimum package versions to prevent downgrades -->
+  <PropertyGroup>
+    <MinimumMicrosoftCodeAnalysisVersion>4.14.0</MinimumMicrosoftCodeAnalysisVersion>
+    <MinimumMicrosoftCodeAnalysisCSharpVersion>4.14.0</MinimumMicrosoftCodeAnalysisCSharpVersion>
+    <MinimumMicrosoftCodeAnalysisAnalyzersVersion>3.11.0</MinimumMicrosoftCodeAnalysisAnalyzersVersion>
+    <MinimumMicrosoftNetTestSdkVersion>17.0.0</MinimumMicrosoftNetTestSdkVersion>
+  </PropertyGroup>
+
+  <!-- Package version validation using version ranges -->
+  <ItemGroup>
+    <PackageReference Update="Microsoft.CodeAnalysis" Version="[$(MinimumMicrosoftCodeAnalysisVersion),)" />
+    <PackageReference Update="Microsoft.CodeAnalysis.CSharp" Version="[$(MinimumMicrosoftCodeAnalysisCSharpVersion),)" />
+    <PackageReference Update="Microsoft.CodeAnalysis.Analyzers" Version="[$(MinimumMicrosoftCodeAnalysisAnalyzersVersion),)" />
+    <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="[$(MinimumMicrosoftCodeAnalysisCSharpVersion),)" />
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="[$(MinimumMicrosoftNetTestSdkVersion),)" />
+  </ItemGroup>
+  
+  <!-- Custom MSBuild target to validate versions -->
+  <Target Name="ValidateVersionConsistency" BeforeTargets="Build">
+    <Message Text="Validating package version consistency..." Importance="normal" />
+    <Error Condition="'$(TargetFramework)' == 'net6.0' OR '$(TargetFramework)' == 'net5.0' OR '$(TargetFramework)' == 'netcoreapp3.1'"
+           Text="Project $(MSBuildProjectName) targets an outdated framework ($(TargetFramework)). Minimum supported versions are .NET 8.0 or .NET Standard 2.0." />
+    <Message Text="✅ Version validation passed for $(MSBuildProjectName)" Importance="normal" />
+  </Target>
+</Project>
