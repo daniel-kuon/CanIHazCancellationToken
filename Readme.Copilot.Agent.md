@@ -281,6 +281,26 @@ dotnet build  # Should show analyzer warnings
 - **IDE Integration**: Fast analysis with real-time feedback
 - **Scalability**: Efficiently handles large codebases
 
+## ⚙️ CA2016 Suppression
+
+The analyzer includes an optional CA2016 suppression feature that eliminates duplicate warnings:
+
+- **Smart Suppression**: Only suppresses CA2016 where our analyzer provides better guidance
+- **Configurable**: Opt-in feature via `.editorconfig` or MSBuild properties
+- **No Conflicts**: Prevents redundant warnings while maintaining comprehensive coverage
+
+**Configuration:**
+```ini
+# .editorconfig
+[*]
+chihc.suppress_ca2016 = true
+```
+
+**Benefits:**
+- Reduces noise from duplicate warnings
+- Provides more comprehensive CancellationToken guidance
+- Maintains compatibility with existing workflows
+
 ## 🔗 Related Resources
 
 - [Cancellation in Managed Threads](https://docs.microsoft.com/en-us/dotnet/standard/threading/cancellation-in-managed-threads)

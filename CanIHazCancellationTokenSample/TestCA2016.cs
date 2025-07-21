@@ -5,10 +5,26 @@ public class TestCA2016Suppression
 {
     public async Task TestMethodAsync(CancellationToken cancellationToken = default)
     {
-        // This should trigger both our CHIHC004/CHIHC005 and CA2016
+        // These cases should trigger both our CHIHC analyzer and CA2016
+        // When suppression is enabled, CA2016 should be suppressed
+        
+        // Case 1: Missing cancellationToken parameter - should trigger CHIHC004/CHIHC005
         await Task.Delay(1000); // Missing cancellationToken
         
-        // This should trigger CHIHC003 and possibly CA2016
+        // Case 2: Using CancellationToken.None - should trigger CHIHC003  
         await Task.Delay(1000, CancellationToken.None);
+        
+        // Case 3: Method with overload that accepts CancellationToken
+        await SomeAsyncMethod(); // Our analyzer should suggest using overload with CancellationToken
+    }
+
+    private async Task SomeAsyncMethod()
+    {
+        await Task.Delay(500);
+    }
+    
+    private async Task SomeAsyncMethod(CancellationToken cancellationToken)
+    {
+        await Task.Delay(500, cancellationToken);
     }
 }
