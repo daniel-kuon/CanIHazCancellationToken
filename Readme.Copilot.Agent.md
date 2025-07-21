@@ -90,6 +90,14 @@ The analyzer doesn't just detect issues—it provides smart automatic fixes:
 3. **Overload Detection**: Finds method overloads that accept `CancellationToken`
 4. **Context Awareness**: Suggests using existing tokens instead of `CancellationToken.None`
 
+### 🤝 CA2016 Suppression (Configurable)
+
+When enabled, the analyzer can suppress built-in .NET analyzer CA2016 for locations where it reports issues, preventing duplicate warnings:
+
+- **Configurable**: Opt-in feature that can be enabled per project
+- **Smart Suppression**: Only suppresses CA2016 where our analyzer provides better suggestions
+- **No Conflicts**: Eliminates redundant warnings while maintaining comprehensive coverage
+
 ### 🎯 Supported Method Types
 
 - `async Task` methods
@@ -183,6 +191,25 @@ dotnet test --logger trx --results-directory TestResults
 
 ## 🔧 Configuration
 
+### CA2016 Suppression
+
+The analyzer can optionally suppress built-in .NET analyzer CA2016 (Forward the 'CancellationToken' parameter to methods) for locations where CanIHazCancellationToken analyzer reports issues. This helps avoid duplicate warnings.
+
+Enable CA2016 suppression in your `.editorconfig` or `globalconfig` file:
+
+```ini
+[*]
+chihc.suppress_ca2016 = true
+```
+
+Or configure via MSBuild properties:
+
+```xml
+<PropertyGroup>
+    <CHIHCSuppressCA2016>true</CHIHCSuppressCA2016>
+</PropertyGroup>
+```
+
 ### EditorConfig Support
 
 Configure rule severity in your `.editorconfig`:
@@ -193,6 +220,11 @@ Configure rule severity in your `.editorconfig`:
 dotnet_diagnostic.CHIHC001.severity = warning
 dotnet_diagnostic.CHIHC002.severity = warning
 dotnet_diagnostic.CHIHC003.severity = suggestion
+dotnet_diagnostic.CHIHC004.severity = warning
+dotnet_diagnostic.CHIHC005.severity = warning
+
+# Enable CA2016 suppression
+chihc.suppress_ca2016 = true
 
 # Disable specific rules if needed
 dotnet_diagnostic.CHIHC001.severity = none
@@ -208,6 +240,9 @@ Control analyzer behavior in your project file:
     <!-- Enable/disable specific analyzers -->
     <WarningsAsErrors>CHIHC001;CHIHC002</WarningsAsErrors>
     <WarningsNotAsErrors>CHIHC003</WarningsNotAsErrors>
+    
+    <!-- Enable CA2016 suppression -->
+    <CHIHCSuppressCA2016>true</CHIHCSuppressCA2016>
 </PropertyGroup>
 ```
 
@@ -245,6 +280,26 @@ dotnet build  # Should show analyzer warnings
 - **Memory Usage**: Low memory footprint
 - **IDE Integration**: Fast analysis with real-time feedback
 - **Scalability**: Efficiently handles large codebases
+
+## ⚙️ CA2016 Suppression
+
+The analyzer includes an optional CA2016 suppression feature that eliminates duplicate warnings:
+
+- **Smart Suppression**: Only suppresses CA2016 where our analyzer provides better guidance
+- **Configurable**: Opt-in feature via `.editorconfig` or MSBuild properties
+- **No Conflicts**: Prevents redundant warnings while maintaining comprehensive coverage
+
+**Configuration:**
+```ini
+# .editorconfig
+[*]
+chihc.suppress_ca2016 = true
+```
+
+**Benefits:**
+- Reduces noise from duplicate warnings
+- Provides more comprehensive CancellationToken guidance
+- Maintains compatibility with existing workflows
 
 ## 🔗 Related Resources
 
