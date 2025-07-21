@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CanIHazCancellationTokenAnalyzer.Analyzers;
+using CanIHazCancellationTokenAnalyzer.Configuration;
+using CanIHazCancellationTokenAnalyzer.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -50,15 +52,37 @@ public class MethodDeclarationFixProvider : CodeFixProvider
         CancellationToken cancellationToken)
     {
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
-
+        
+        // Get configuration options from the document
+        var syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken);
+        var options = syntaxTree != null 
+            ? document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(syntaxTree)
+            : null;
+        var preferUsingStatements = options != null && CodeFixConfiguration.GetPreferUsingStatements(options);
+        
+        var typeName = UsingStatementHelper.GetTypeName("System.Threading.CancellationToken", preferUsingStatements);
+        
         var newParameter = SyntaxFactory.Parameter(SyntaxFactory.Identifier("cancellationToken"))
-           .WithType(SyntaxFactory.ParseTypeName("System.Threading.CancellationToken"))
+           .WithType(typeName)
            .WithDefault(SyntaxFactory.EqualsValueClause(SyntaxFactory.ParseExpression("default")));
 
         var newParamList = methodDecl.ParameterList.AddParameters(newParameter);
         var newMethodDecl = methodDecl.WithParameterList(newParamList);
 
         editor.ReplaceNode(methodDecl, newMethodDecl);
+        
+        // Add using directive if needed
+        if (preferUsingStatements)
+        {
+            var root = await editor.GetChangedDocument().GetSyntaxRootAsync(cancellationToken) as CompilationUnitSyntax;
+            var cancellationTokenNamespace = UsingStatementHelper.GetNamespaceFromType("System.Threading.CancellationToken");
+            if (root != null && cancellationTokenNamespace != null)
+            {
+                var newRoot = UsingStatementHelper.EnsureUsingDirective(root, cancellationTokenNamespace);
+                return document.WithSyntaxRoot(newRoot);
+            }
+        }
+        
         return editor.GetChangedDocument();
     }
 }
