@@ -12,6 +12,15 @@ This repository contains Roslyn analyzers and code fixes for CancellationToken u
 - Run tests after making changes to verify correctness.
 - Keep the readme up to date with any new features or changes.
 
+## Version Management Policy
+- **NEVER downgrade package versions or .NET framework versions automatically**.
+- Only upgrade or maintain current versions unless explicitly requested by the user.
+- Preserve target framework versions specified in project files (.csproj).
+- Maintain package version consistency across the solution.
+- Always check global.json for the minimum required .NET SDK version.
+- When suggesting package updates, only suggest newer stable versions.
+- If a downgrade is absolutely necessary, explicitly ask for user confirmation first.
+
 ## Commit Message Conventions
 - Use descriptive commit messages (e.g., `Add analyzer for missing CancellationToken parameter`).
 

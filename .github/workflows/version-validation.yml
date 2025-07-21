@@ -1,0 +1,161 @@
+name: Version Management Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate-versions:
+    runs-on: ubuntu-latest
+    name: Validate Package and Framework Versions
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+
+    - name: Validate .NET SDK version consistency
+      shell: pwsh
+      run: |
+        $globalJson = Get-Content -Path "global.json" | ConvertFrom-Json
+        $requiredVersion = $globalJson.sdk.version
+        $actualVersion = dotnet --version
+        
+        Write-Host "Required .NET SDK version: $requiredVersion"
+        Write-Host "Actual .NET SDK version: $actualVersion"
+        
+        if (-not $actualVersion.StartsWith($requiredVersion.Split('.')[0] + '.' + $requiredVersion.Split('.')[1])) {
+          Write-Error "❌ .NET SDK version mismatch. Expected version compatible with $requiredVersion, got $actualVersion"
+          exit 1
+        }
+        
+        Write-Host "✅ .NET SDK version is compatible"
+
+    - name: Validate target frameworks are not downgraded
+      shell: pwsh
+      run: |
+        # Define minimum allowed target frameworks
+        $minimumTargetFrameworks = @{
+          'CanIHazCancellationTokenAnalyzer' = 'netstandard2.0'
+          'CanIHazCancellationTokenAnalyzer.Tests' = 'net8.0'
+          'CanIHazCancellationTokenSample' = 'net8.0'
+        }
+        
+        $projects = Get-ChildItem -Recurse -Filter "*.csproj"
+        $hasErrors = $false
+        
+        foreach ($project in $projects) {
+          $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project.Name)
+          $content = Get-Content $project.FullName -Raw
+          
+          if ($content -match '<TargetFramework>([^<]+)</TargetFramework>') {
+            $targetFramework = $matches[1]
+            $minimumFramework = $minimumTargetFrameworks[$projectName]
+            
+            if ($minimumFramework) {
+              Write-Host "Checking $projectName`: $targetFramework (minimum: $minimumFramework)"
+              
+              # Simple version check - more sophisticated logic could be added
+              if ($targetFramework.StartsWith('net') -and $minimumFramework.StartsWith('net')) {
+                $currentVersion = [regex]::Match($targetFramework, '\d+\.\d+|\d+').Value
+                $minimumVersion = [regex]::Match($minimumFramework, '\d+\.\d+|\d+').Value
+                
+                if ($currentVersion -and $minimumVersion) {
+                  if ([version]$currentVersion -lt [version]$minimumVersion) {
+                    Write-Error "❌ $projectName has downgraded target framework: $targetFramework (minimum: $minimumFramework)"
+                    $hasErrors = $true
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        if ($hasErrors) {
+          Write-Error "❌ Target framework downgrades detected!"
+          exit 1
+        } else {
+          Write-Host "✅ No target framework downgrades detected"
+        }
+
+    - name: Validate package versions are not downgraded
+      shell: pwsh
+      run: |
+        # Define minimum package versions
+        $minimumPackageVersions = @{
+          'Microsoft.CodeAnalysis' = '4.14.0'
+          'Microsoft.CodeAnalysis.CSharp' = '4.13.0'
+          'Microsoft.CodeAnalysis.Analyzers' = '3.11.0'
+          'Microsoft.CodeAnalysis.CSharp.Workspaces' = '4.13.0'
+          'Microsoft.NET.Test.Sdk' = '17.0.0'
+        }
+        
+        $projects = Get-ChildItem -Recurse -Filter "*.csproj"
+        $hasErrors = $false
+        
+        foreach ($project in $projects) {
+          $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project.Name)
+          $content = Get-Content $project.FullName -Raw
+          
+          foreach ($package in $minimumPackageVersions.Keys) {
+            $pattern = '<PackageReference\s+Include="' + [regex]::Escape($package) + '"\s+Version="([^"]+)"'
+            if ($content -match $pattern) {
+              $currentVersion = $matches[1]
+              $minimumVersion = $minimumPackageVersions[$package]
+              
+              Write-Host "Checking $projectName -> $package`: $currentVersion (minimum: $minimumVersion)"
+              
+              try {
+                if ([version]$currentVersion -lt [version]$minimumVersion) {
+                  Write-Error "❌ $projectName has downgraded package $package`: $currentVersion (minimum: $minimumVersion)"
+                  $hasErrors = $true
+                }
+              }
+              catch {
+                Write-Warning "⚠️ Could not compare versions for $package in $projectName`: $currentVersion vs $minimumVersion"
+              }
+            }
+          }
+        }
+        
+        if ($hasErrors) {
+          Write-Error "❌ Package version downgrades detected!"
+          exit 1
+        } else {
+          Write-Host "✅ No package version downgrades detected"
+        }
+
+    - name: Check for changes in version-sensitive files
+      if: github.event_name == 'pull_request'
+      shell: pwsh
+      run: |
+        $changedFiles = git diff --name-only HEAD~1
+        $versionSensitiveFiles = @('global.json', '*.csproj', 'Directory.Build.props', 'Directory.Build.targets')
+        
+        $changedVersionFiles = @()
+        foreach ($file in $changedFiles) {
+          foreach ($pattern in $versionSensitiveFiles) {
+            if ($file -like $pattern) {
+              $changedVersionFiles += $file
+              break
+            }
+          }
+        }
+        
+        if ($changedVersionFiles.Count -gt 0) {
+          Write-Host "⚠️ Version-sensitive files changed:"
+          $changedVersionFiles | ForEach-Object { Write-Host "  - $_" }
+          Write-Host ""
+          Write-Host "Please ensure these changes do not downgrade package or framework versions."
+          Write-Host "If downgrades are necessary, they should be explicitly documented in the PR description."
+        } else {
+          Write-Host "✅ No version-sensitive files changed"
+        }
