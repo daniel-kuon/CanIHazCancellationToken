@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj
+      
+    - name: Build
+      run: dotnet build CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --no-restore --configuration Release
+      
+    - name: Test package creation
+      run: dotnet pack CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --no-build --configuration Release --output ./packages
+      
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: ./packages/*.nupkg
