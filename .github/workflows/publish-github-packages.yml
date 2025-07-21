@@ -1,0 +1,50 @@
+name: Publish to GitHub Packages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Generate version
+      id: version
+      run: |
+        # Generate version based on commit count and short SHA
+        COMMIT_COUNT=$(git rev-list --count HEAD)
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        VERSION="1.0.${COMMIT_COUNT}-alpha.${SHORT_SHA}"
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Generated version: ${VERSION}"
+
+    - name: Update package version
+      run: |
+        sed -i "s/<PackageVersion>.*<\/PackageVersion>/<PackageVersion>${{ steps.version.outputs.VERSION }}<\/PackageVersion>/" CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj
+        
+    - name: Restore dependencies
+      run: dotnet restore CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj
+
+    - name: Build
+      run: dotnet build CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --no-restore --configuration Release
+
+    - name: Pack
+      run: dotnet pack CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --no-build --configuration Release --output ./packages
+
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        dotnet nuget push ./packages/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source github --skip-duplicate

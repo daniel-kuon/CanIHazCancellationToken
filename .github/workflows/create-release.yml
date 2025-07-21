@@ -1,0 +1,77 @@
+name: Create Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Update package version
+      run: |
+        sed -i "s/<PackageVersion>.*<\/PackageVersion>/<PackageVersion>${{ github.event.inputs.version }}<\/PackageVersion>/" CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj
+
+    - name: Build and pack
+      run: |
+        dotnet build CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --configuration Release
+        dotnet pack CanIHazCancellationTokenAnalyzer/CanIHazCancellationTokenAnalyzer.csproj --no-build --configuration Release --output ./packages
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        release_name: Release v${{ github.event.inputs.version }}
+        body: |
+          ## Changes in v${{ github.event.inputs.version }}
+          
+          ### New Features
+          - 
+          
+          ### Bug Fixes
+          - 
+          
+          ### Breaking Changes
+          - 
+          
+          ## Installation
+          
+          ```xml
+          <PackageReference Include="CanIHazCancellationToken" Version="${{ github.event.inputs.version }}">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+          </PackageReference>
+          ```
+        draft: true
+        prerelease: ${{ github.event.inputs.prerelease }}
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./packages/CanIHazCancellationToken.${{ github.event.inputs.version }}.nupkg
+        asset_name: CanIHazCancellationToken.${{ github.event.inputs.version }}.nupkg
+        asset_content_type: application/zip
