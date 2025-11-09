@@ -1,0 +1,18 @@
+# Example .editorconfig with short names enabled
+# This shows how to enable the new configuration option
+
+# top-most EditorConfig file
+root = true
+
+# All files
+[*]
+indent_style = space
+
+# Code files
+[*.{cs,csx,vb,vbx}]
+indent_size = 4
+insert_final_newline = true
+
+# Configuration for CanIHazCancellationToken analyzer
+# Set to true to prefer adding using statements and using short names
+CanIHazCancellationToken.PreferUsingStatements = true
