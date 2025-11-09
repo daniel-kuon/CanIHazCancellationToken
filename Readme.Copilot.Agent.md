@@ -211,6 +211,17 @@ Control analyzer behavior in your project file:
 </PropertyGroup>
 ```
 
+## 📦 Version Management
+
+This project follows strict version management policies to ensure stability and security:
+
+- **No Automatic Downgrades**: Package versions and .NET framework targets are never automatically downgraded
+- **Version Consistency**: All projects maintain consistent minimum version requirements  
+- **Security First**: Only stable, secure versions are used unless explicitly documented
+- **Reproducible Builds**: Package lock files ensure consistent dependency resolution
+
+See [VERSION_MANAGEMENT_POLICY.md](VERSION_MANAGEMENT_POLICY.md) for detailed guidelines.
+
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
@@ -220,6 +231,11 @@ We welcome contributions! Here's how you can help:
 3. **🔧 Submit PRs**: Fix bugs or add features
 4. **📖 Improve Documentation**: Help make the docs better
 5. **🧪 Add Tests**: More test coverage is always appreciated
+
+### Version Management Guidelines
+- Never downgrade package or framework versions without explicit justification
+- Update minimum versions in `Directory.Build.props` when upgrading dependencies
+- Run version validation: `dotnet build` will check for version consistency
 
 ### Development Setup
 
