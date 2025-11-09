@@ -1,0 +1,14 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+root = true
+
+[*]
+chihc.suppress_ca2016 = true
+
+[*.{cs,csx,vb,vbx}]
+# Configure rule severities
+dotnet_diagnostic.CHIHC001.severity = warning
+dotnet_diagnostic.CHIHC002.severity = warning
+dotnet_diagnostic.CHIHC003.severity = suggestion
+dotnet_diagnostic.CHIHC004.severity = warning
+dotnet_diagnostic.CHIHC005.severity = warning
