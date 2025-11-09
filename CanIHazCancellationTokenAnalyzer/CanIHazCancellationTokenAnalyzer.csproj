@@ -4,11 +4,46 @@
         <LangVersion>latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <Nullable>enable</Nullable>
+        
+        <!-- NuGet Package Configuration -->
+        <PackageId>CanIHazCancellationToken</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Title>CanIHazCancellationToken Analyzer</Title>
+        <Authors>daniel-kuon</Authors>
+        <Description>A sophisticated Roslyn analyzer and code fix provider that helps developers properly implement and use CancellationToken in asynchronous C# code. This tool ensures your async methods follow best practices for cancellation support, improving application responsiveness and resource management.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/daniel-kuon/CanIHazCancellationToken</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/daniel-kuon/CanIHazCancellationToken</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>roslyn analyzer csharp cancellation token async await</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        
+        <!-- Analyzer Package Configuration -->
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        
+        <!-- Build Configuration -->
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
+    
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" PrivateAssets="all"/>
     </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../LICENSE" Pack="true" PackagePath="LICENSE"/>
+        <None Include="../README.md" Pack="true" PackagePath="README.md"/>
+    </ItemGroup>
+
+    <Target Name="_AddAnalyzersToOutput">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers\dotnet\cs\$(AssemblyName).dll"/>
+        </ItemGroup>
+    </Target>
 </Project>
